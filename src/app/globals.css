@@ -3,57 +3,76 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0f0f13;
-  --surface: #16161d;
-  --surface2: #1e1e28;
-  --border: #2a2a38;
-  --text: #e8e6f0;
-  --muted: #6b6880;
-  --accent: #a78bfa;
-  --accent2: #f472b6;
-  --green: #4ade80;
-  --amber: #fbbf24;
-  --red: #f87171;
+  /* Warm paper-and-ink palette: a personal journal feel */
+  --paper: #f6f1e7;
+  --paper2: #efe7d6;
+  --card: #fffdf8;
+  --ink: #2b2419;
+  --ink-soft: #6b6150;
+  --line: #e0d5c0;
+  --line-strong: #cdbfa3;
+  --plum: #7c5cbf;
+  --plum-soft: #efe9fb;
+  --rose: #d6608a;
+  --rose-soft: #fbe9f0;
+  --sage: #5f8d6a;
+  --sage-soft: #e8f1e7;
+  --gold: #c79a3a;
+  --gold-soft: #f7eecf;
+  --sky: #5685b5;
+  --sky-soft: #e6eef6;
+  --terra: #c46a44;
+
+  --serif: 'Fraunces', Georgia, serif;
+  --sans: 'Inter', -apple-system, sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--paper);
+  background-image: radial-gradient(var(--line) 0.5px, transparent 0.5px);
+  background-size: 22px 22px;
+  color: var(--ink);
+  font-family: var(--sans);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+h1, h2, h3, .serif { font-family: var(--serif); }
 
-input, textarea {
-  background: var(--surface2);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 12px;
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
+
+input, textarea, select {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  padding: 9px 12px;
   width: 100%;
   outline: none;
-  transition: border-color 0.15s;
   font-size: 14px;
+  font-family: var(--sans);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
+input:focus, textarea:focus, select:focus { border-color: var(--plum); box-shadow: 0 0 0 3px var(--plum-soft); }
+input::placeholder, textarea::placeholder { color: var(--ink-soft); opacity: 0.6; }
 
-input:focus, textarea:focus { border-color: var(--accent); }
-
-select {
-  background: var(--surface2);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  outline: none;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-button { cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
-button:hover { opacity: 0.85; }
+button { cursor: pointer; font-family: var(--sans); transition: transform 0.08s, opacity 0.15s, background 0.15s; }
 button:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+.fade-in { animation: fadeIn 0.35s ease both; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.tape {
+  position: absolute; width: 70px; height: 22px;
+  background: rgba(214,200,160,0.55); top: -10px; left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
