@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 
-// Optional Notion sync. If NOTION_TOKEN and NOTION_DATABASE_ID are set as env vars,
-// this pulls items from a Notion database. Otherwise returns a not-configured flag
-// so the Study view falls back to the manual checklist.
+// Reads the "Study Tracker" Notion database. Each row has Topic (title),
+// Module (select), Subtopic (text) and Status (select). Returns them so the
+// app can group by Module → Subtopic. Read-only: Notion is the master list.
 export async function GET() {
   const token = process.env.NOTION_TOKEN;
   const dbId = process.env.NOTION_DATABASE_ID;
@@ -17,27 +17,31 @@ export async function GET() {
         'Notion-Version': '2022-06-28',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ page_size: 100 }),
+      body: JSON.stringify({ page_size: 200 }),
     });
-    if (!res.ok) return NextResponse.json({ configured: true, error: 'Notion request failed', items: [] });
+    if (!res.ok) {
+      const detail = await res.text();
+      return NextResponse.json({ configured: true, error: `Notion said: ${res.status}`, detail, items: [] });
+    }
     const data = await res.json();
-    type NotionPage = { id: string; url: string; properties: Record<string, { title?: { plain_text: string }[]; checkbox?: boolean; select?: { name: string } | null }> };
+    type Prop = {
+      title?: { plain_text: string }[];
+      rich_text?: { plain_text: string }[];
+      select?: { name: string } | null;
+    };
+    type NotionPage = { id: string; url: string; properties: Record<string, Prop> };
+
     const items = (data.results as NotionPage[]).map((p) => {
       const props = p.properties || {};
       const titleProp = Object.values(props).find((v) => Array.isArray(v.title));
       const title = titleProp?.title?.map((t) => t.plain_text).join('') || 'Untitled';
-      const statusProp = Object.values(props).find((v) => v.select);
-      const checkProp = Object.values(props).find((v) => typeof v.checkbox === 'boolean');
-      return {
-        id: p.id,
-        title,
-        status: statusProp?.select?.name || '',
-        done: checkProp?.checkbox ?? false,
-        url: p.url,
-      };
+      const moduleName = props['Module']?.select?.name || 'Other';
+      const subtopic = props['Subtopic']?.rich_text?.map((t) => t.plain_text).join('') || '';
+      const status = props['Status']?.select?.name || '';
+      return { id: p.id, title, module: moduleName, subtopic, status, done: status === 'Done', url: p.url };
     });
     return NextResponse.json({ configured: true, items });
   } catch {
-    return NextResponse.json({ configured: true, error: 'Notion fetch error', items: [] });
+    return NextResponse.json({ configured: true, error: 'Could not reach Notion', items: [] });
   }
 }
