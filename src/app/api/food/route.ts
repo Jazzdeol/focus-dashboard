@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(rows);
 }
 export async function POST(req: NextRequest) {
-  const sql = getDb(); const { log_date, food, calories } = await req.json();
-  const r = await sql`INSERT INTO food_logs (log_date, food, calories) VALUES (${log_date}, ${food}, ${calories || 0}) RETURNING *`;
+  const sql = getDb(); const { log_date, food, calories, protein } = await req.json();
+  const r = await sql`INSERT INTO food_logs (log_date, food, calories, protein) VALUES (${log_date}, ${food}, ${calories || 0}, ${protein || 0}) RETURNING *`;
   return NextResponse.json(r[0]);
 }

@@ -88,4 +88,33 @@ export async function initDb() {
     id SERIAL PRIMARY KEY, image_data TEXT NOT NULL, caption TEXT,
     rotation REAL DEFAULT 0, sort_order INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT NOW())`;
+
+  // ── Protein on food logs (added in update 2) ─────────────────
+  await sql`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS protein INTEGER DEFAULT 0`;
+
+  // ── Nutrition profile (single row) ───────────────────────────
+  await sql`CREATE TABLE IF NOT EXISTS profile (
+    id INTEGER PRIMARY KEY DEFAULT 1, weight NUMERIC, height NUMERIC, age INTEGER,
+    sex TEXT DEFAULT 'female', activity TEXT DEFAULT 'moderate',
+    updated_at TIMESTAMP DEFAULT NOW())`;
+
+  // ── Gym: exercises + per-week weight logs ────────────────────
+  await sql`CREATE TABLE IF NOT EXISTS gym_exercises (
+    id SERIAL PRIMARY KEY, name TEXT NOT NULL, sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW())`;
+  await sql`CREATE TABLE IF NOT EXISTS gym_weight_logs (
+    id SERIAL PRIMARY KEY,
+    exercise_id INTEGER REFERENCES gym_exercises(id) ON DELETE CASCADE,
+    week_start DATE NOT NULL, weight NUMERIC, reps INTEGER, sets INTEGER,
+    updated_at TIMESTAMP DEFAULT NOW(), UNIQUE(exercise_id, week_start))`;
+
+  // ── Sleep tracking ───────────────────────────────────────────
+  await sql`CREATE TABLE IF NOT EXISTS sleep_logs (
+    id SERIAL PRIMARY KEY, log_date DATE UNIQUE, bedtime TEXT, wake_time TEXT,
+    hours NUMERIC, quality INTEGER, notes TEXT, updated_at TIMESTAMP DEFAULT NOW())`;
+
+  // ── Places / countries visited (for the yearly Wrapped) ──────
+  await sql`CREATE TABLE IF NOT EXISTS places_visited (
+    id SERIAL PRIMARY KEY, name TEXT NOT NULL, year INTEGER,
+    created_at TIMESTAMP DEFAULT NOW())`;
 }

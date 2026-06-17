@@ -5,21 +5,14 @@ import confetti from 'canvas-confetti';
 let audioCtx: AudioContext | null = null;
 
 export function pop() {
-  // confetti
   confetti({
-    particleCount: 70,
-    spread: 70,
-    origin: { y: 0.7 },
-    colors: ['#a78bfa', '#f472b6', '#4ade80', '#fbbf24', '#60a5fa'],
-    scalar: 0.9,
+    particleCount: 70, spread: 70, origin: { y: 0.7 },
+    colors: ['#a78bfa', '#f472b6', '#4ade80', '#fbbf24', '#60a5fa'], scalar: 0.9,
   });
-  // synthesized pop sound (no asset file needed)
   try {
     if (!audioCtx) audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    const ctx = audioCtx;
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const ctx = audioCtx; const now = ctx.currentTime;
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
     osc.type = 'sine';
     osc.frequency.setValueAtTime(420, now);
@@ -31,28 +24,38 @@ export function pop() {
   } catch { /* audio not available */ }
 }
 
-// ── Date helpers ──────────────────────────────────────────────────────
-export function mondayOf(d = new Date()): string {
-  const date = new Date(d);
-  const day = (date.getDay() + 6) % 7; // Mon = 0
+// ── Date helpers (LOCAL time, UK-friendly, Monday–Sunday weeks) ───────
+// IMPORTANT: we build dates from LOCAL components, never toISOString(),
+// because toISOString() uses UTC and can roll the date over by a day.
+export function localISO(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function mondayOf(d: Date = new Date()): string {
+  const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = (date.getDay() + 6) % 7; // Mon = 0 … Sun = 6
   date.setDate(date.getDate() - day);
-  return date.toISOString().split('T')[0];
+  return localISO(date);
 }
 
 export function weekDays(weekStart: string): { iso: string; label: string; short: string }[] {
-  const start = new Date(weekStart + 'T00:00:00');
+  const [y, m, d] = weekStart.split('-').map(Number);
+  const start = new Date(y, m - 1, d);
   return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
+    const dt = new Date(start);
+    dt.setDate(start.getDate() + i);
     return {
-      iso: d.toISOString().split('T')[0],
-      label: d.toLocaleDateString('en-GB', { weekday: 'long' }),
-      short: d.toLocaleDateString('en-GB', { weekday: 'short' }),
+      iso: localISO(dt),
+      label: dt.toLocaleDateString('en-GB', { weekday: 'long' }),
+      short: dt.toLocaleDateString('en-GB', { weekday: 'short' }),
     };
   });
 }
 
-export const todayISO = () => new Date().toISOString().split('T')[0];
+export const todayISO = () => localISO();
 
 export function currentQuarter(): string {
   const now = new Date();

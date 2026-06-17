@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sun, X, Bell } from 'lucide-react';
 import { getJSON, mondayOf, todayISO } from '@/lib/client';
+import { dailyQuote } from '@/lib/quotes';
 
 type Task = { id: number; title: string; completed: boolean };
 type Gym = { id: number; day_label: string; focus: string; completed: boolean };
@@ -25,12 +26,13 @@ export default function MorningGreeting({ name = 'there', onClose, onGoWeekly }:
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const dayName = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const quote = dailyQuote();
 
   const requestNotifications = async () => {
     if (!('Notification' in window)) { alert('This device does not support notifications.'); return; }
     const perm = await Notification.requestPermission();
     if (perm === 'granted') {
-      new Notification(`${greeting}, ${name}!`, { body: 'Notifications are on. I\'ll greet you here each day.' });
+      new Notification(`${greeting}, ${name}!`, { body: quote });
     }
   };
 
@@ -42,7 +44,11 @@ export default function MorningGreeting({ name = 'there', onClose, onGoWeekly }:
           <Sun size={26} style={{ color: 'var(--gold)' }} />
         </div>
         <h2 style={{ fontFamily: 'var(--serif)', fontSize: 26, fontWeight: 700 }}>{greeting}, {name}</h2>
-        <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 20 }}>{dayName}</p>
+        <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 14 }}>{dayName}</p>
+
+        <div style={{ background: 'var(--gold-soft)', borderLeft: '3px solid var(--gold)', borderRadius: 8, padding: '10px 12px', marginBottom: 18, fontStyle: 'italic', fontSize: 14, fontFamily: 'var(--serif)' }}>
+          &ldquo;{quote}&rdquo;
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 22 }}>
           <Line emoji="📋" text={tasks.length ? `${tasks.length} task${tasks.length > 1 ? 's' : ''} still to do` : 'No tasks left — lovely'} />
