@@ -92,6 +92,18 @@ export async function initDb() {
   // ── Protein on food logs (added in update 2) ─────────────────
   await sql`ALTER TABLE food_logs ADD COLUMN IF NOT EXISTS protein INTEGER DEFAULT 0`;
 
+  // ── Backfill columns on tables that pre-date Life Book ────────
+  // (the original "Focus" app created tasks/habits with fewer columns;
+  //  CREATE TABLE IF NOT EXISTS won't add new ones, so do it explicitly)
+  await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS week_start DATE`;
+  await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'general'`;
+  await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0`;
+  await sql`ALTER TABLE habits ADD COLUMN IF NOT EXISTS icon TEXT DEFAULT '✨'`;
+  await sql`ALTER TABLE habits ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#a78bfa'`;
+  await sql`ALTER TABLE habits ADD COLUMN IF NOT EXISTS section TEXT DEFAULT 'daily'`;
+  await sql`ALTER TABLE habits ADD COLUMN IF NOT EXISTS weekly_goal INTEGER DEFAULT 7`;
+  await sql`ALTER TABLE habits ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0`;
+
   // ── Nutrition profile (single row) ───────────────────────────
   await sql`CREATE TABLE IF NOT EXISTS profile (
     id INTEGER PRIMARY KEY DEFAULT 1, weight NUMERIC, height NUMERIC, age INTEGER,
