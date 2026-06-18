@@ -172,4 +172,22 @@ export async function initDb() {
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS yearly_reflections_user_year ON yearly_reflections (user_id, year)`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS sleep_logs_user_date ON sleep_logs (user_id, log_date)`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS daily_metrics_user_date ON daily_metrics (user_id, log_date)`;
+
+  // ── Per-user third-party integrations (Notion, Google, etc.) ──
+  // Tokens are stored ENCRYPTED (see src/lib/crypto.ts). Never returned to the browser.
+  await sql`CREATE TABLE IF NOT EXISTS integration_accounts (
+    id SERIAL PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    access_token TEXT,            -- encrypted
+    refresh_token TEXT,           -- encrypted (nullable)
+    expires_at TIMESTAMP,         -- when access_token expires (nullable)
+    scope TEXT,
+    status TEXT DEFAULT 'connected',   -- 'connected' | 'reconnect_needed'
+    account_label TEXT,           -- e.g. workspace name / email, safe to show
+    metadata JSONB DEFAULT '{}',  -- provider-specific (workspace_id, database_id, calendar_id…)
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+  )`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS integration_user_provider ON integration_accounts (user_id, provider)`;
 }

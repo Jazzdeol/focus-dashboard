@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { SignedIn, SignedOut, UserButton, useAuth, useUser } from '@clerk/nextjs';
-import { BookHeart, CalendarDays, Compass, CalendarRange, ListChecks, GraduationCap, Library } from 'lucide-react';
+import { BookHeart, CalendarDays, Compass, CalendarRange, ListChecks, GraduationCap, Library, Settings as SettingsIcon } from 'lucide-react';
 import { postJSON, todayISO } from '@/lib/client';
 import CoverView from '@/components/CoverView';
 import WeeklyView from '@/components/WeeklyView';
@@ -10,10 +10,11 @@ import YearlyView from '@/components/YearlyView';
 import BucketView from '@/components/BucketView';
 import StudyView from '@/components/StudyView';
 import BookView from '@/components/BookView';
+import SettingsView from '@/components/SettingsView';
 import MorningGreeting from '@/components/MorningGreeting';
 import Landing from '@/components/Landing';
 
-type View = 'cover' | 'weekly' | 'quarterly' | 'yearly' | 'bucket' | 'study' | 'books';
+type View = 'cover' | 'weekly' | 'quarterly' | 'yearly' | 'bucket' | 'study' | 'books' | 'settings';
 
 const NAV: { key: View; label: string; icon: React.ElementType }[] = [
   { key: 'cover', label: 'Cover', icon: BookHeart },
@@ -36,6 +37,9 @@ function App() {
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
     postJSON('/api/init', {}).then(() => setReady(true)).catch(() => setReady(true));
+    // returning from an OAuth connect → jump to settings
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('settings')) { setView('settings'); return; }
     try {
       const last = localStorage.getItem('lifebook-greeted');
       if (last !== todayISO()) setShowGreeting(true);
@@ -73,7 +77,13 @@ function App() {
             );
           })}
           {/* profile / sign-out */}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', paddingLeft: 8 }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 8 }}>
+            <button onClick={() => setView('settings')} aria-label="Settings" title="Integrations & settings" style={{
+              display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+              background: view === 'settings' ? 'var(--ink)' : 'transparent',
+              color: view === 'settings' ? 'var(--paper)' : 'var(--ink-soft)',
+              border: 'none', borderRadius: 9, padding: '7px 10px', fontSize: 13.5, fontWeight: 500,
+            }}><SettingsIcon size={16} /></button>
             <UserButton afterSignOutUrl="/" />
           </div>
         </div>
@@ -93,6 +103,7 @@ function App() {
             {view === 'bucket' && <BucketView />}
             {view === 'books' && <BookView />}
             {view === 'study' && <StudyView />}
+            {view === 'settings' && <SettingsView />}
           </>
         )}
       </main>
