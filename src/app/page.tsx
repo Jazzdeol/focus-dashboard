@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { BookHeart, CalendarDays, Compass, CalendarRange, ListChecks, GraduationCap } from 'lucide-react';
+import { BookHeart, CalendarDays, Compass, CalendarRange, ListChecks, GraduationCap, Library } from 'lucide-react';
 import { postJSON, todayISO } from '@/lib/client';
 import CoverView from '@/components/CoverView';
 import WeeklyView from '@/components/WeeklyView';
@@ -8,9 +8,10 @@ import QuarterlyView from '@/components/QuarterlyView';
 import YearlyView from '@/components/YearlyView';
 import BucketView from '@/components/BucketView';
 import StudyView from '@/components/StudyView';
+import BookView from '@/components/BookView';
 import MorningGreeting from '@/components/MorningGreeting';
 
-type View = 'cover' | 'weekly' | 'quarterly' | 'yearly' | 'bucket' | 'study';
+type View = 'cover' | 'weekly' | 'quarterly' | 'yearly' | 'bucket' | 'study' | 'books';
 
 const NAV: { key: View; label: string; icon: React.ElementType }[] = [
   { key: 'cover', label: 'Cover', icon: BookHeart },
@@ -18,6 +19,7 @@ const NAV: { key: View; label: string; icon: React.ElementType }[] = [
   { key: 'quarterly', label: 'Quarterly', icon: CalendarRange },
   { key: 'yearly', label: 'Yearly', icon: Compass },
   { key: 'bucket', label: 'Bucket List', icon: ListChecks },
+  { key: 'books', label: 'Books', icon: Library },
   { key: 'study', label: 'Study', icon: GraduationCap },
 ];
 
@@ -83,6 +85,7 @@ export default function Home() {
             {view === 'quarterly' && <QuarterlyView />}
             {view === 'yearly' && <YearlyView />}
             {view === 'bucket' && <BucketView />}
+            {view === 'books' && <BookView />}
             {view === 'study' && <StudyView />}
           </>
         )}

@@ -110,8 +110,9 @@ function ManualChecklist() {
   const [form, setForm] = useState({ subject: '', title: '', task_type: 'notes' });
   useEffect(() => { getJSON('/api/study').then(setItems); }, []);
   const add = async () => {
-    if (!form.subject.trim() || !form.title.trim()) return;
-    const r = await postJSON('/api/study', form);
+    if (!form.title.trim()) return;
+    const subject = form.subject.trim() || 'General';
+    const r = await postJSON('/api/study', { ...form, subject });
     setItems(p => [...p, r]); setForm({ subject: form.subject, title: '', task_type: form.task_type });
   };
   const toggle = async (i: StudyItem) => { if (!i.completed) pop(); await patchJSON(`/api/study/${i.id}`, { completed: !i.completed }); setItems(p => p.map(x => x.id === i.id ? { ...x, completed: !x.completed } : x)); };

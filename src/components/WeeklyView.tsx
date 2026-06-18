@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Dumbbell, Flame, Target, Sparkles, Heart, NotebookPen, Moon, Calculator, Plus } from 'lucide-react';
 import { Card, SectionTitle, AddRow, DeleteBtn, Check, Empty } from './ui';
 import HabitGrid from './HabitGrid';
+import { StepsScreenCard, GoogleCalCard } from './WellnessCards';
 import { getJSON, postJSON, patchJSON, del, mondayOf, todayISO, weekDays, pop } from '@/lib/client';
 
 type Task = { id: number; title: string; completed: boolean };
@@ -420,6 +421,8 @@ export default function WeeklyView() {
         <CalorieCard week={week} target={targets ? targets.bulk : null} />
         <NutritionCard onProfile={setProfile} />
         <SleepCard />
+        <StepsScreenCard />
+        <GoogleCalCard />
         <ReflectionCard week={week} />
         <IdeasCard />
       </div>

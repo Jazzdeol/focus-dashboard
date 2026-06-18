@@ -117,4 +117,14 @@ export async function initDb() {
   await sql`CREATE TABLE IF NOT EXISTS places_visited (
     id SERIAL PRIMARY KEY, name TEXT NOT NULL, year INTEGER,
     created_at TIMESTAMP DEFAULT NOW())`;
+
+  // ── Book tracker ─────────────────────────────────────────────
+  await sql`CREATE TABLE IF NOT EXISTS books (
+    id SERIAL PRIMARY KEY, title TEXT NOT NULL, author TEXT, cover_id TEXT,
+    status TEXT DEFAULT 'want', created_at TIMESTAMP DEFAULT NOW())`;
+
+  // ── Daily metrics: steps + screen time (manual) ──────────────
+  await sql`CREATE TABLE IF NOT EXISTS daily_metrics (
+    id SERIAL PRIMARY KEY, log_date DATE UNIQUE, steps INTEGER,
+    screen_minutes INTEGER, updated_at TIMESTAMP DEFAULT NOW())`;
 }

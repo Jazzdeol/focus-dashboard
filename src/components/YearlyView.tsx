@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Dumbbell, Trophy, Flame, Globe, Moon, ListChecks, Sparkles, Plus } from 'lucide-react';
 import { Card, SectionTitle, AddRow, DeleteBtn, Check, Empty } from './ui';
 import { getJSON, postJSON, patchJSON, del, currentYear, pop } from '@/lib/client';
+import WorldExplorer from './WorldExplorer';
 
 type YGoal = { id: number; goal: string; completed: boolean };
 type Wrapped = {
@@ -66,10 +67,15 @@ function WrappedCard({ year }: { year: number }) {
         </div>
       )}
       <div style={{ borderTop: '1px solid var(--line)', paddingTop: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
           <Globe size={15} style={{ color: 'var(--sky)' }} />
           <span style={{ fontSize: 13, fontWeight: 600 }}>Countries visited{places.length ? ` (${places.length})` : ''}</span>
         </div>
+        {places.length > 0 && (
+          <div style={{ marginBottom: 14 }}>
+            <WorldExplorer countries={places.map(p => p.name)} />
+          </div>
+        )}
         {places.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
             {places.map(p => (
