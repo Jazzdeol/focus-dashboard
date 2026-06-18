@@ -139,4 +139,37 @@ export async function initDb() {
   await sql`CREATE TABLE IF NOT EXISTS daily_metrics (
     id SERIAL PRIMARY KEY, log_date DATE UNIQUE, steps INTEGER,
     screen_minutes INTEGER, updated_at TIMESTAMP DEFAULT NOW())`;
+
+  // ════════════════════════════════════════════════════════════
+  // MULTI-USER: every table gets a user_id, and reads/writes are
+  // scoped to the signed-in Clerk user in the API routes.
+  // ════════════════════════════════════════════════════════════
+  const tables = [
+    'tasks', 'gym_sessions', 'food_logs', 'weekly_goals', 'weekly_reflections',
+    'fun_ideas', 'habits', 'habit_logs', 'finances', 'quarterly_goals',
+    'achievements', 'parking_lot', 'yearly_goals', 'yearly_reflections',
+    'bucket_list', 'study_items', 'cover_photos', 'gym_exercises',
+    'gym_weight_logs', 'sleep_logs', 'places_visited', 'books', 'daily_metrics',
+  ];
+  for (const t of tables) {
+    await sql.query(`ALTER TABLE ${t} ADD COLUMN IF NOT EXISTS user_id TEXT`);
+    await sql.query(`CREATE INDEX IF NOT EXISTS ${t}_user_idx ON ${t} (user_id)`);
+  }
+
+  // Per-user profile (single row per user) — replaces the old single-row table
+  await sql`CREATE TABLE IF NOT EXISTS profiles (
+    user_id TEXT PRIMARY KEY, weight NUMERIC, height NUMERIC, age INTEGER,
+    sex TEXT DEFAULT 'female', activity TEXT DEFAULT 'moderate',
+    updated_at TIMESTAMP DEFAULT NOW())`;
+
+  // The upsert tables used a single-column UNIQUE (e.g. week_start). For
+  // multi-user we drop those and make uniqueness per-user instead.
+  await sql`ALTER TABLE weekly_reflections DROP CONSTRAINT IF EXISTS weekly_reflections_week_start_key`;
+  await sql`ALTER TABLE yearly_reflections DROP CONSTRAINT IF EXISTS yearly_reflections_year_key`;
+  await sql`ALTER TABLE sleep_logs DROP CONSTRAINT IF EXISTS sleep_logs_log_date_key`;
+  await sql`ALTER TABLE daily_metrics DROP CONSTRAINT IF EXISTS daily_metrics_log_date_key`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS weekly_reflections_user_week ON weekly_reflections (user_id, week_start)`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS yearly_reflections_user_year ON yearly_reflections (user_id, year)`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS sleep_logs_user_date ON sleep_logs (user_id, log_date)`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS daily_metrics_user_date ON daily_metrics (user_id, log_date)`;
 }

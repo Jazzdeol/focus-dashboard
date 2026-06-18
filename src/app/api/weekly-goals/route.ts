@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { getUserId, unauthorized } from '@/lib/auth';
 export async function GET(req: NextRequest) {
+  const userId = await getUserId(); if (!userId) return unauthorized();
   const sql = getDb(); const week = req.nextUrl.searchParams.get('week');
-  const rows = await sql`SELECT * FROM weekly_goals WHERE week_start=${week} ORDER BY created_at`;
+  const rows = await sql`SELECT * FROM weekly_goals WHERE user_id=${userId} AND week_start=${week} ORDER BY created_at`;
   return NextResponse.json(rows);
 }
 export async function POST(req: NextRequest) {
+  const userId = await getUserId(); if (!userId) return unauthorized();
   const sql = getDb(); const { week_start, goal } = await req.json();
-  const r = await sql`INSERT INTO weekly_goals (week_start, goal) VALUES (${week_start}, ${goal}) RETURNING *`;
+  const r = await sql`INSERT INTO weekly_goals (user_id, week_start, goal) VALUES (${userId}, ${week_start}, ${goal}) RETURNING *`;
   return NextResponse.json(r[0]);
 }

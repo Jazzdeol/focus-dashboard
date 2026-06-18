@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { SignedIn, SignedOut, UserButton, useAuth, useUser } from '@clerk/nextjs';
 import { BookHeart, CalendarDays, Compass, CalendarRange, ListChecks, GraduationCap, Library } from 'lucide-react';
 import { postJSON, todayISO } from '@/lib/client';
 import CoverView from '@/components/CoverView';
@@ -10,6 +11,7 @@ import BucketView from '@/components/BucketView';
 import StudyView from '@/components/StudyView';
 import BookView from '@/components/BookView';
 import MorningGreeting from '@/components/MorningGreeting';
+import Landing from '@/components/Landing';
 
 type View = 'cover' | 'weekly' | 'quarterly' | 'yearly' | 'bucket' | 'study' | 'books';
 
@@ -23,36 +25,36 @@ const NAV: { key: View; label: string; icon: React.ElementType }[] = [
   { key: 'study', label: 'Study', icon: GraduationCap },
 ];
 
-export default function Home() {
+function App() {
+  const { isSignedIn, isLoaded } = useAuth();
+  const { user } = useUser();
   const [view, setView] = useState<View>('cover');
   const [ready, setReady] = useState(false);
   const [showGreeting, setShowGreeting] = useState(false);
 
-  // set up tables once, then decide whether to show the morning greeting
+  // set up tables for this user once signed in, then maybe greet
   useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
     postJSON('/api/init', {}).then(() => setReady(true)).catch(() => setReady(true));
     try {
       const last = localStorage.getItem('lifebook-greeted');
       if (last !== todayISO()) setShowGreeting(true);
     } catch { /* localStorage unavailable */ }
-  }, []);
+  }, [isLoaded, isSignedIn]);
 
   const dismissGreeting = () => {
     try { localStorage.setItem('lifebook-greeted', todayISO()); } catch {}
     setShowGreeting(false);
   };
 
+  const firstName = user?.firstName || 'there';
+
   return (
     <div style={{ minHeight: '100vh' }}>
       {showGreeting && ready && (
-        <MorningGreeting
-          name="Jazz"
-          onClose={dismissGreeting}
-          onGoWeekly={() => { dismissGreeting(); setView('weekly'); }}
-        />
+        <MorningGreeting name={firstName} onClose={dismissGreeting} onGoWeekly={() => { dismissGreeting(); setView('weekly'); }} />
       )}
 
-      {/* top navigation */}
       <nav style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(246,241,231,0.85)', backdropFilter: 'blur(10px)', borderBottom: '1px solid var(--line)' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto' }}>
           <span style={{ fontFamily: 'var(--serif)', fontWeight: 700, fontSize: 18, marginRight: 10, whiteSpace: 'nowrap' }}>Life Book</span>
@@ -70,6 +72,10 @@ export default function Home() {
               </button>
             );
           })}
+          {/* profile / sign-out */}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', paddingLeft: 8 }}>
+            <UserButton afterSignOutUrl="/" />
+          </div>
         </div>
       </nav>
 
@@ -91,5 +97,14 @@ export default function Home() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <>
+      <SignedOut><Landing /></SignedOut>
+      <SignedIn><App /></SignedIn>
+    </>
   );
 }

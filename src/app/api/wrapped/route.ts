@@ -1,25 +1,26 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { getUserId, unauthorized } from '@/lib/auth';
 
-// Aggregates a year's worth of activity for the "Your YEAR Wrapped" card.
 export async function GET(req: NextRequest) {
+  const userId = await getUserId(); if (!userId) return unauthorized();
   const sql = getDb();
   const year = parseInt(req.nextUrl.searchParams.get('year') || `${new Date().getFullYear()}`);
   const start = `${year}-01-01`;
   const end = `${year}-12-31`;
 
   const [workouts, habitChecks, achievements, bucketDone, yearGoalsDone, qGoalsDone, places, sleepAgg, foodAgg, topExercise] = await Promise.all([
-    sql`SELECT COUNT(*)::int AS n FROM gym_weight_logs WHERE week_start BETWEEN ${start} AND ${end}`,
-    sql`SELECT COUNT(*)::int AS n FROM habit_logs WHERE logged_date BETWEEN ${start} AND ${end}`,
-    sql`SELECT COUNT(*)::int AS n FROM achievements WHERE achieved_date BETWEEN ${start} AND ${end}`,
-    sql`SELECT COUNT(*)::int AS n FROM bucket_list WHERE completed=TRUE`,
-    sql`SELECT COUNT(*)::int AS n FROM yearly_goals WHERE year=${year} AND completed=TRUE`,
-    sql`SELECT COUNT(*)::int AS n FROM quarterly_goals WHERE quarter LIKE ${year + '-%'} AND completed=TRUE`,
-    sql`SELECT name FROM places_visited WHERE year=${year} ORDER BY created_at`,
-    sql`SELECT ROUND(AVG(hours)::numeric, 1) AS avg_hours, COUNT(*)::int AS nights FROM sleep_logs WHERE log_date BETWEEN ${start} AND ${end} AND hours IS NOT NULL`,
-    sql`SELECT COUNT(DISTINCT log_date)::int AS days, COALESCE(SUM(calories),0)::int AS kcal, COALESCE(SUM(protein),0)::int AS protein FROM food_logs WHERE log_date BETWEEN ${start} AND ${end}`,
-    sql`SELECT e.name, MAX(g.weight) AS top FROM gym_weight_logs g JOIN gym_exercises e ON e.id=g.exercise_id WHERE g.week_start BETWEEN ${start} AND ${end} GROUP BY e.name ORDER BY top DESC NULLS LAST LIMIT 1`,
+    sql`SELECT COUNT(*)::int AS n FROM gym_weight_logs WHERE user_id=${userId} AND week_start BETWEEN ${start} AND ${end}`,
+    sql`SELECT COUNT(*)::int AS n FROM habit_logs WHERE user_id=${userId} AND logged_date BETWEEN ${start} AND ${end}`,
+    sql`SELECT COUNT(*)::int AS n FROM achievements WHERE user_id=${userId} AND achieved_date BETWEEN ${start} AND ${end}`,
+    sql`SELECT COUNT(*)::int AS n FROM bucket_list WHERE user_id=${userId} AND completed=TRUE`,
+    sql`SELECT COUNT(*)::int AS n FROM yearly_goals WHERE user_id=${userId} AND year=${year} AND completed=TRUE`,
+    sql`SELECT COUNT(*)::int AS n FROM quarterly_goals WHERE user_id=${userId} AND quarter LIKE ${year + '-%'} AND completed=TRUE`,
+    sql`SELECT name FROM places_visited WHERE user_id=${userId} AND year=${year} ORDER BY created_at`,
+    sql`SELECT ROUND(AVG(hours)::numeric, 1) AS avg_hours, COUNT(*)::int AS nights FROM sleep_logs WHERE user_id=${userId} AND log_date BETWEEN ${start} AND ${end} AND hours IS NOT NULL`,
+    sql`SELECT COUNT(DISTINCT log_date)::int AS days, COALESCE(SUM(calories),0)::int AS kcal, COALESCE(SUM(protein),0)::int AS protein FROM food_logs WHERE user_id=${userId} AND log_date BETWEEN ${start} AND ${end}`,
+    sql`SELECT e.name, MAX(g.weight) AS top FROM gym_weight_logs g JOIN gym_exercises e ON e.id=g.exercise_id WHERE g.user_id=${userId} AND g.week_start BETWEEN ${start} AND ${end} GROUP BY e.name ORDER BY top DESC NULLS LAST LIMIT 1`,
   ]);
 
   return NextResponse.json({

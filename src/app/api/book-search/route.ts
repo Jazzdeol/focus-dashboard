@@ -1,6 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
+import { getUserId, unauthorized } from '@/lib/auth';
 export async function GET(req: NextRequest) {
+  const userId = await getUserId(); if (!userId) return unauthorized();
   const q = req.nextUrl.searchParams.get('q');
   if (!q || !q.trim()) return NextResponse.json([]);
   try {
