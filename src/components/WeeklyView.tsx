@@ -275,30 +275,47 @@ function GymCard({ week }: { week: string }) {
 }
 
 // ── Sleep ──
+type SleepRow = { log_date: string; hours: number | null; bedtime: string | null; wake_time: string | null };
 function SleepCard() {
   const today = todayISO();
-  const [recent, setRecent] = useState<{ log_date: string; hours: number | null; bedtime: string | null; wake_time: string | null }[]>([]);
-  const [bedtime, setBedtime] = useState('');
-  const [wake, setWake] = useState('');
+  const [recent, setRecent] = useState<SleepRow[]>([]);
+  const [showFix, setShowFix] = useState(false);
+  const [fixDate, setFixDate] = useState(today);
+  const [fixBed, setFixBed] = useState('');
+  const [fixWake, setFixWake] = useState('');
   const load = () => getJSON('/api/sleep').then(setRecent);
   useEffect(() => { load(); }, []);
 
-  const calcHours = (bt: string, wt: string) => {
+  const nowHHMM = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  const calcHours = (bt?: string | null, wt?: string | null) => {
     if (!bt || !wt) return null;
     const [bh, bm] = bt.split(':').map(Number); const [wh, wm] = wt.split(':').map(Number);
     let mins = (wh * 60 + wm) - (bh * 60 + bm);
     if (mins <= 0) mins += 24 * 60; // crossed midnight
     return Math.round((mins / 60) * 10) / 10;
   };
-  const checkIn = async (which: 'bed' | 'wake') => {
-    if (which === 'bed') { if (!bedtime) return; await postJSON('/api/sleep', { log_date: today, bedtime }); }
-    else {
-      if (!wake) return;
-      const existing = recent.find(r => r.log_date.startsWith(today));
-      const hours = calcHours(existing?.bedtime || bedtime, wake);
-      await postJSON('/api/sleep', { log_date: today, wake_time: wake, hours }); pop();
+
+  // the most recent record that has a bedtime but no wake yet (last night)
+  const openRec = recent.find(r => r.bedtime && !r.wake_time);
+  const lastRec = recent[0];
+
+  const goingToBed = async () => { await postJSON('/api/sleep', { log_date: today, bedtime: nowHHMM() }); load(); };
+  const justWokeUp = async () => {
+    const now = nowHHMM();
+    if (openRec) {
+      const hours = calcHours(openRec.bedtime, now);
+      await postJSON('/api/sleep', { log_date: openRec.log_date, wake_time: now, hours });
+    } else {
+      // no bedtime logged last night — record wake; they can add bedtime via fix
+      await postJSON('/api/sleep', { log_date: today, wake_time: now });
+      setShowFix(true); setFixDate(today); setFixWake(now);
     }
-    load();
+    pop(); load();
+  };
+  const saveFix = async () => {
+    const hours = calcHours(fixBed, fixWake);
+    await postJSON('/api/sleep', { log_date: fixDate, bedtime: fixBed || null, wake_time: fixWake || null, hours });
+    setShowFix(false); setFixBed(''); setFixWake(''); load();
   };
 
   const valid = recent.filter(r => r.hours != null);
@@ -311,30 +328,61 @@ function SleepCard() {
     const bedtimes = valid.map(r => r.bedtime).filter(Boolean) as string[];
     if (bedtimes.length >= 3) {
       const mins = bedtimes.map(b => { const [h, m] = b.split(':').map(Number); return (h < 12 ? h + 24 : h) * 60 + m; });
-      const spread = Math.max(...mins) - Math.min(...mins);
-      if (spread > 90) insights.push('Your bedtimes vary by more than 1.5 hours — a more regular sleep window would steady your energy.');
+      if (Math.max(...mins) - Math.min(...mins) > 90) insights.push('Your bedtimes vary by more than 1.5 hours — a more regular sleep window would steady your energy.');
     }
   }
 
   return (
     <Card>
-      <SectionTitle sub="Check in at night and when you wake"><Moon size={17} style={{ display: 'inline', verticalAlign: -3, marginRight: 6, color: 'var(--plum)' }} />Sleep</SectionTitle>
-      <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-        <div style={{ flex: 1 }}>
-          <label style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 600 }}>BEDTIME</label>
-          <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-            <input type="time" value={bedtime} onChange={e => setBedtime(e.target.value)} />
-            <button onClick={() => checkIn('bed')} style={{ background: 'var(--plum)', color: '#fff', border: 'none', borderRadius: 8, padding: '0 10px', fontSize: 12 }}>✓</button>
-          </div>
+      <SectionTitle sub="Tap when you go to bed and when you wake"><Moon size={17} style={{ display: 'inline', verticalAlign: -3, marginRight: 6, color: 'var(--plum)' }} />Sleep</SectionTitle>
+
+      {/* last night summary */}
+      {lastRec && (lastRec.bedtime || lastRec.wake_time) && (
+        <div style={{ background: 'var(--paper2)', borderRadius: 10, padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>
+          <span style={{ color: 'var(--ink-soft)' }}>Last logged: </span>
+          {lastRec.bedtime || '—'} → {lastRec.wake_time || '—'}
+          {lastRec.hours != null && <strong style={{ color: 'var(--plum)' }}> · {Number(lastRec.hours)}h</strong>}
+          {openRec && <span style={{ color: 'var(--gold)' }}> · in bed now</span>}
         </div>
-        <div style={{ flex: 1 }}>
-          <label style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 600 }}>WOKE UP</label>
-          <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-            <input type="time" value={wake} onChange={e => setWake(e.target.value)} />
-            <button onClick={() => checkIn('wake')} style={{ background: 'var(--plum)', color: '#fff', border: 'none', borderRadius: 8, padding: '0 10px', fontSize: 12 }}>✓</button>
-          </div>
-        </div>
+      )}
+
+      {/* one-tap check in/out */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+        <button onClick={goingToBed} style={{ flex: 1, background: 'var(--plum-soft)', color: 'var(--plum)', border: '1px solid var(--plum)44', borderRadius: 10, padding: '11px 8px', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <Moon size={15} /> Going to bed
+        </button>
+        <button onClick={justWokeUp} style={{ flex: 1, background: 'var(--gold-soft)', color: 'var(--gold)', border: '1px solid var(--gold)44', borderRadius: 10, padding: '11px 8px', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          ☀️ I&apos;m awake
+        </button>
       </div>
+      <p style={{ fontSize: 11, color: 'var(--ink-soft)', textAlign: 'center', marginBottom: 10 }}>
+        Stamps the current time and works out your hours automatically.
+      </p>
+
+      {/* manual fix */}
+      <button onClick={() => { setShowFix(s => !s); setFixDate(openRec?.log_date || today); setFixBed(openRec?.bedtime || ''); setFixWake(''); }} style={{ background: 'none', border: 'none', color: 'var(--sky)', fontSize: 12, fontWeight: 600, marginBottom: showFix ? 8 : 12, cursor: 'pointer' }}>
+        ✎ Forgot to check in? Enter times manually
+      </button>
+      {showFix && (
+        <div style={{ background: 'var(--paper2)', borderRadius: 10, padding: 12, marginBottom: 12 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+            <label style={{ fontSize: 12, color: 'var(--ink-soft)', width: 60 }}>Night of</label>
+            <input type="date" value={fixDate} onChange={e => setFixDate(e.target.value)} />
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Bedtime</label>
+              <input type="time" value={fixBed} onChange={e => setFixBed(e.target.value)} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: 11, color: 'var(--ink-soft)' }}>Woke up</label>
+              <input type="time" value={fixWake} onChange={e => setFixWake(e.target.value)} />
+            </div>
+          </div>
+          <button onClick={saveFix} style={{ width: '100%', background: 'var(--sky)', color: '#fff', border: 'none', borderRadius: 8, padding: 9, fontWeight: 600, fontSize: 13 }}>Save times</button>
+        </div>
+      )}
+
       {avg != null && (
         <div style={{ background: 'var(--plum-soft)', borderRadius: 11, padding: 12, marginBottom: 10 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--plum)', marginBottom: 4 }}>Your sleep, looked at</div>
