@@ -161,6 +161,7 @@ export async function initDb() {
     user_id TEXT PRIMARY KEY, weight NUMERIC, height NUMERIC, age INTEGER,
     sex TEXT DEFAULT 'female', activity TEXT DEFAULT 'moderate',
     updated_at TIMESTAMP DEFAULT NOW())`;
+  await sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS theme JSONB DEFAULT '{}'::jsonb`;
 
   // The upsert tables used a single-column UNIQUE (e.g. week_start). For
   // multi-user we drop those and make uniqueness per-user instead.

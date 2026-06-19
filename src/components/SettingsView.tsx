@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Check, RefreshCw, Plug, AlertTriangle, Info } from 'lucide-react';
 import { Card } from './ui';
 import { getJSON, postJSON } from '@/lib/client';
+import AppearanceSettings from './AppearanceSettings';
 
 type Conn = { provider: string; label: string; connected: boolean; status: string; account: string | null };
 
@@ -17,6 +18,7 @@ const MANUAL = [
 ];
 
 export default function SettingsView() {
+  const [tab, setTab] = useState<'integrations' | 'appearance'>('integrations');
   const [conns, setConns] = useState<Conn[]>([]);
   const [loading, setLoading] = useState(true);
   const [banner, setBanner] = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null);
@@ -37,8 +39,24 @@ export default function SettingsView() {
 
   return (
     <div className="fade-in">
+      <div style={{ textAlign: 'center', marginBottom: 18 }}>
+        <h2 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 700 }}>Settings</h2>
+      </div>
+
+      {/* tabs */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 22 }}>
+        {([['integrations', 'Integrations'], ['appearance', 'Appearance']] as const).map(([k, label]) => (
+          <button key={k} onClick={() => setTab(k)} style={{
+            padding: '8px 18px', borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            border: '1px solid var(--line-strong)',
+            background: tab === k ? 'var(--ink)' : 'transparent', color: tab === k ? 'var(--paper)' : 'var(--ink-soft)',
+          }}>{label}</button>
+        ))}
+      </div>
+
+      {tab === 'appearance' ? <AppearanceSettings /> : (
+      <div>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <h2 style={{ fontFamily: 'var(--serif)', fontSize: 30, fontWeight: 700 }}>Integrations</h2>
         <p style={{ fontSize: 13, color: 'var(--ink-soft)' }}>connect your own accounts — private to you</p>
       </div>
 
@@ -89,6 +107,8 @@ export default function SettingsView() {
           </Card>
         ))}
       </div>
+      </div>
+      )}
     </div>
   );
 }

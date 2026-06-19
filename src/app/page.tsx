@@ -14,6 +14,7 @@ import RelationshipsView from '@/components/RelationshipsView';
 import SettingsView from '@/components/SettingsView';
 import MorningGreeting from '@/components/MorningGreeting';
 import Landing from '@/components/Landing';
+import ThemeProvider, { useTheme } from '@/components/ThemeProvider';
 
 type View = 'cover' | 'weekly' | 'quarterly' | 'yearly' | 'bucket' | 'study' | 'books' | 'people' | 'settings';
 
@@ -31,9 +32,13 @@ const NAV: { key: View; label: string; icon: React.ElementType }[] = [
 function App() {
   const { isSignedIn, isLoaded } = useAuth();
   const { user } = useUser();
+  const { theme, setView: setThemeView } = useTheme();
   const [view, setView] = useState<View>('cover');
   const [ready, setReady] = useState(false);
   const [showGreeting, setShowGreeting] = useState(false);
+
+  // keep the theme engine in sync with the active page (for per-page colour)
+  useEffect(() => { setThemeView(view); }, [view, setThemeView]);
 
   // set up tables for this user once signed in, then maybe greet
   useEffect(() => {
@@ -61,7 +66,7 @@ function App() {
         <MorningGreeting name={firstName} onClose={dismissGreeting} onGoWeekly={() => { dismissGreeting(); setView('weekly'); }} />
       )}
 
-      <nav style={{ position: 'sticky', top: 0, zIndex: 40, background: 'rgba(246,241,231,0.85)', backdropFilter: 'blur(10px)', borderBottom: '1px solid var(--line)' }}>
+      <nav style={{ position: 'sticky', top: 0, zIndex: 40, background: 'color-mix(in srgb, var(--paper) 85%, transparent)', backdropFilter: 'blur(10px)', borderBottom: '1px solid var(--line)' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto' }}>
           <span style={{ fontFamily: 'var(--serif)', fontWeight: 700, fontSize: 18, marginRight: 10, whiteSpace: 'nowrap' }}>Life Book</span>
           {NAV.map(n => {
@@ -92,6 +97,7 @@ function App() {
       </nav>
 
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 16px 60px' }}>
+        {theme.perPage?.[view] && <div style={{ height: 4, width: 60, background: 'var(--page-accent)', borderRadius: 4, margin: '0 auto 18px' }} />}
         {!ready ? (
           <div style={{ textAlign: 'center', padding: 80, color: 'var(--ink-soft)' }}>
             <div style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>Opening your Life Book…</div>
@@ -118,7 +124,7 @@ export default function Home() {
   return (
     <>
       <SignedOut><Landing /></SignedOut>
-      <SignedIn><App /></SignedIn>
+      <SignedIn><ThemeProvider><App /></ThemeProvider></SignedIn>
     </>
   );
 }
