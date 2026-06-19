@@ -8,7 +8,7 @@ import { PALETTES, PATTERNS, getPalette } from '@/lib/themes';
 const PAGES = [
   { key: 'cover', label: 'Cover' }, { key: 'weekly', label: 'Weekly' }, { key: 'quarterly', label: 'Quarterly' },
   { key: 'yearly', label: 'Yearly' }, { key: 'bucket', label: 'Bucket List' }, { key: 'books', label: 'Library' },
-  { key: 'people', label: 'People' }, { key: 'study', label: 'Study' },
+  { key: 'people', label: 'People' }, { key: 'recipes', label: 'Recipes' }, { key: 'study', label: 'Study' },
 ];
 const GROUPS = [
   { id: 'gentle', label: 'Gentle & pastel' }, { id: 'bold', label: 'Bold & block' }, { id: 'dark', label: 'Dark' },

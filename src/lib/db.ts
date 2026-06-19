@@ -210,4 +210,10 @@ export async function initDb() {
     id SERIAL PRIMARY KEY, user_id TEXT, tmdb_id TEXT, media_type TEXT, title TEXT NOT NULL,
     year TEXT, poster TEXT, status TEXT DEFAULT 'want', created_at TIMESTAMP DEFAULT NOW())`;
   await sql`CREATE INDEX IF NOT EXISTS movies_user_idx ON movies (user_id)`;
+
+  // ── Saved recipes (Spoonacular) ──────────────────────────────
+  await sql`CREATE TABLE IF NOT EXISTS recipes (
+    id SERIAL PRIMARY KEY, user_id TEXT, spoonacular_id TEXT, title TEXT NOT NULL, image TEXT,
+    source_url TEXT, ready_minutes INTEGER, servings INTEGER, created_at TIMESTAMP DEFAULT NOW())`;
+  await sql`CREATE INDEX IF NOT EXISTS recipes_user_idx ON recipes (user_id)`;
 }

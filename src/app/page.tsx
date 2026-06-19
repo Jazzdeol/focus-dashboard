@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { SignedIn, SignedOut, UserButton, useAuth, useUser } from '@clerk/nextjs';
-import { BookHeart, CalendarDays, Compass, CalendarRange, ListChecks, GraduationCap, Library, Heart, Settings as SettingsIcon } from 'lucide-react';
+import { BookHeart, CalendarDays, Compass, CalendarRange, ListChecks, GraduationCap, Library, Heart, UtensilsCrossed, Settings as SettingsIcon } from 'lucide-react';
 import { postJSON, todayISO } from '@/lib/client';
 import CoverView from '@/components/CoverView';
 import WeeklyView from '@/components/WeeklyView';
@@ -11,12 +11,13 @@ import BucketView from '@/components/BucketView';
 import StudyView from '@/components/StudyView';
 import LibraryView from '@/components/LibraryView';
 import RelationshipsView from '@/components/RelationshipsView';
+import RecipesView from '@/components/RecipesView';
 import SettingsView from '@/components/SettingsView';
 import MorningGreeting from '@/components/MorningGreeting';
 import Landing from '@/components/Landing';
 import ThemeProvider, { useTheme } from '@/components/ThemeProvider';
 
-type View = 'cover' | 'weekly' | 'quarterly' | 'yearly' | 'bucket' | 'study' | 'books' | 'people' | 'settings';
+type View = 'cover' | 'weekly' | 'quarterly' | 'yearly' | 'bucket' | 'study' | 'books' | 'people' | 'recipes' | 'settings';
 
 const NAV: { key: View; label: string; icon: React.ElementType }[] = [
   { key: 'cover', label: 'Cover', icon: BookHeart },
@@ -26,6 +27,7 @@ const NAV: { key: View; label: string; icon: React.ElementType }[] = [
   { key: 'bucket', label: 'Bucket List', icon: ListChecks },
   { key: 'books', label: 'Library', icon: Library },
   { key: 'people', label: 'People', icon: Heart },
+  { key: 'recipes', label: 'Recipes', icon: UtensilsCrossed },
   { key: 'study', label: 'Study', icon: GraduationCap },
 ];
 
@@ -111,6 +113,7 @@ function App() {
             {view === 'bucket' && <BucketView />}
             {view === 'books' && <LibraryView />}
             {view === 'people' && <RelationshipsView />}
+            {view === 'recipes' && <RecipesView />}
             {view === 'study' && <StudyView />}
             {view === 'settings' && <SettingsView />}
           </>
