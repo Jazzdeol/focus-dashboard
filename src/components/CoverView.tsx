@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { ImagePlus, X } from 'lucide-react';
+import { ImagePlus, X, Link2 } from 'lucide-react';
 import { getJSON, postJSON, del } from '@/lib/client';
 
 type Photo = { id: number; image_data: string; caption: string; rotation: number };
@@ -33,9 +33,19 @@ function compress(file: File): Promise<string> {
 export default function CoverView({ onEnter }: { onEnter: () => void }) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [busy, setBusy] = useState(false);
+  const [showUrl, setShowUrl] = useState(false);
+  const [urlVal, setUrlVal] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { getJSON('/api/cover').then(setPhotos); }, []);
+
+  const addByUrl = async () => {
+    const url = urlVal.trim();
+    if (!url) return;
+    const rotation = (Math.random() * 8 - 4);
+    const p = await postJSON('/api/cover', { image_data: url, caption: '', rotation });
+    setPhotos(prev => [...prev, p]); setUrlVal(''); setShowUrl(false);
+  };
 
   const onFiles = async (files: FileList | null) => {
     if (!files) return;
@@ -70,11 +80,26 @@ export default function CoverView({ onEnter }: { onEnter: () => void }) {
         <button onClick={() => fileRef.current?.click()} disabled={busy} style={{ background: 'var(--card)', border: '1px solid var(--line-strong)', borderRadius: 10, padding: '9px 16px', fontSize: 14, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 7, color: 'var(--ink)' }}>
           <ImagePlus size={16} /> {busy ? 'Adding…' : 'Add photos'}
         </button>
+        <button onClick={() => setShowUrl(v => !v)} style={{ background: 'var(--card)', border: '1px solid var(--line-strong)', borderRadius: 10, padding: '9px 16px', fontSize: 14, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 7, color: 'var(--ink)' }}>
+          <Link2 size={16} /> Add by URL
+        </button>
         <button onClick={onEnter} style={{ background: 'var(--plum)', color: '#fff', border: 'none', borderRadius: 10, padding: '9px 20px', fontSize: 14, fontWeight: 600 }}>
           Open my planner →
         </button>
         <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={e => onFiles(e.target.files)} />
       </div>
+
+      {showUrl && (
+        <div style={{ maxWidth: 520, margin: '-12px auto 24px', display: 'flex', gap: 8, flexDirection: 'column' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={urlVal} onChange={e => setUrlVal(e.target.value)} onKeyDown={e => e.key === 'Enter' && addByUrl()} placeholder="Paste an image link (https://…)" style={{ flex: 1 }} />
+            <button onClick={addByUrl} style={{ background: 'var(--plum)', color: '#fff', border: 'none', borderRadius: 9, padding: '0 16px', fontWeight: 600, flexShrink: 0 }}>Add</button>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
+            Tip: on Pinterest, open a pin, right-click the image → <em>Copy image address</em>, and paste it here. (Full &ldquo;connect your Pinterest&rdquo; is coming later.)
+          </p>
+        </div>
+      )}
 
       {photos.length === 0 ? (
         <div style={{ maxWidth: 460, margin: '0 auto', textAlign: 'center', padding: '40px 20px', border: '2px dashed var(--line-strong)', borderRadius: 18, color: 'var(--ink-soft)' }}>

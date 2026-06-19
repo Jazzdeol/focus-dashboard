@@ -9,7 +9,7 @@ import QuarterlyView from '@/components/QuarterlyView';
 import YearlyView from '@/components/YearlyView';
 import BucketView from '@/components/BucketView';
 import StudyView from '@/components/StudyView';
-import BookView from '@/components/BookView';
+import LibraryView from '@/components/LibraryView';
 import RelationshipsView from '@/components/RelationshipsView';
 import SettingsView from '@/components/SettingsView';
 import MorningGreeting from '@/components/MorningGreeting';
@@ -23,7 +23,7 @@ const NAV: { key: View; label: string; icon: React.ElementType }[] = [
   { key: 'quarterly', label: 'Quarterly', icon: CalendarRange },
   { key: 'yearly', label: 'Yearly', icon: Compass },
   { key: 'bucket', label: 'Bucket List', icon: ListChecks },
-  { key: 'books', label: 'Books', icon: Library },
+  { key: 'books', label: 'Library', icon: Library },
   { key: 'people', label: 'People', icon: Heart },
   { key: 'study', label: 'Study', icon: GraduationCap },
 ];
@@ -103,7 +103,7 @@ function App() {
             {view === 'quarterly' && <QuarterlyView />}
             {view === 'yearly' && <YearlyView />}
             {view === 'bucket' && <BucketView />}
-            {view === 'books' && <BookView />}
+            {view === 'books' && <LibraryView />}
             {view === 'people' && <RelationshipsView />}
             {view === 'study' && <StudyView />}
             {view === 'settings' && <SettingsView />}

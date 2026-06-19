@@ -203,4 +203,10 @@ export async function initDb() {
     id SERIAL PRIMARY KEY, user_id TEXT, log_date DATE, rating INTEGER, note TEXT,
     created_at TIMESTAMP DEFAULT NOW())`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS mood_user_date ON mood_logs (user_id, log_date)`;
+
+  // ── Movies / TV watchlist (TMDb) ─────────────────────────────
+  await sql`CREATE TABLE IF NOT EXISTS movies (
+    id SERIAL PRIMARY KEY, user_id TEXT, tmdb_id TEXT, media_type TEXT, title TEXT NOT NULL,
+    year TEXT, poster TEXT, status TEXT DEFAULT 'want', created_at TIMESTAMP DEFAULT NOW())`;
+  await sql`CREATE INDEX IF NOT EXISTS movies_user_idx ON movies (user_id)`;
 }
