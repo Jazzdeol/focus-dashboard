@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { SignedIn, SignedOut, UserButton, useAuth, useUser } from '@clerk/nextjs';
-import { BookHeart, CalendarDays, Compass, CalendarRange, ListChecks, GraduationCap, Library, Settings as SettingsIcon } from 'lucide-react';
+import { BookHeart, CalendarDays, Compass, CalendarRange, ListChecks, GraduationCap, Library, Heart, Settings as SettingsIcon } from 'lucide-react';
 import { postJSON, todayISO } from '@/lib/client';
 import CoverView from '@/components/CoverView';
 import WeeklyView from '@/components/WeeklyView';
@@ -10,11 +10,12 @@ import YearlyView from '@/components/YearlyView';
 import BucketView from '@/components/BucketView';
 import StudyView from '@/components/StudyView';
 import BookView from '@/components/BookView';
+import RelationshipsView from '@/components/RelationshipsView';
 import SettingsView from '@/components/SettingsView';
 import MorningGreeting from '@/components/MorningGreeting';
 import Landing from '@/components/Landing';
 
-type View = 'cover' | 'weekly' | 'quarterly' | 'yearly' | 'bucket' | 'study' | 'books' | 'settings';
+type View = 'cover' | 'weekly' | 'quarterly' | 'yearly' | 'bucket' | 'study' | 'books' | 'people' | 'settings';
 
 const NAV: { key: View; label: string; icon: React.ElementType }[] = [
   { key: 'cover', label: 'Cover', icon: BookHeart },
@@ -23,6 +24,7 @@ const NAV: { key: View; label: string; icon: React.ElementType }[] = [
   { key: 'yearly', label: 'Yearly', icon: Compass },
   { key: 'bucket', label: 'Bucket List', icon: ListChecks },
   { key: 'books', label: 'Books', icon: Library },
+  { key: 'people', label: 'People', icon: Heart },
   { key: 'study', label: 'Study', icon: GraduationCap },
 ];
 
@@ -102,6 +104,7 @@ function App() {
             {view === 'yearly' && <YearlyView />}
             {view === 'bucket' && <BucketView />}
             {view === 'books' && <BookView />}
+            {view === 'people' && <RelationshipsView />}
             {view === 'study' && <StudyView />}
             {view === 'settings' && <SettingsView />}
           </>

@@ -190,4 +190,17 @@ export async function initDb() {
     updated_at TIMESTAMP DEFAULT NOW()
   )`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS integration_user_provider ON integration_accounts (user_id, provider)`;
+
+  // ── Relationships: people to keep in touch with ──────────────
+  await sql`CREATE TABLE IF NOT EXISTS relationships (
+    id SERIAL PRIMARY KEY, user_id TEXT, name TEXT NOT NULL, birthday DATE,
+    cadence_days INTEGER DEFAULT 30, last_caught_up DATE, notes TEXT,
+    created_at TIMESTAMP DEFAULT NOW())`;
+  await sql`CREATE INDEX IF NOT EXISTS relationships_user_idx ON relationships (user_id)`;
+
+  // ── Daily mood ───────────────────────────────────────────────
+  await sql`CREATE TABLE IF NOT EXISTS mood_logs (
+    id SERIAL PRIMARY KEY, user_id TEXT, log_date DATE, rating INTEGER, note TEXT,
+    created_at TIMESTAMP DEFAULT NOW())`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS mood_user_date ON mood_logs (user_id, log_date)`;
 }

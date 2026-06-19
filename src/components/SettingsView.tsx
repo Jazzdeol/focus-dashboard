@@ -13,7 +13,6 @@ const BLURB: Record<string, string> = {
 };
 
 const MANUAL = [
-  { label: 'Anki', why: 'Anki has no public API or OAuth — the only bridge runs on your desktop with Anki open, which a website can\u2019t reach.', alt: 'Best alternative: upload an Anki export, or log your review counts manually.' },
   { label: 'Apple Health', why: 'Apple doesn\u2019t allow any website to read Health data — it\u2019s phone-only by design.', alt: 'Best alternative: connect Fitbit, Oura, Garmin or Strava (these do support OAuth), or log steps manually.' },
 ];
 

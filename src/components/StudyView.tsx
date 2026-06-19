@@ -1,8 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { BookOpen, FileText, Eye, RefreshCw, ExternalLink, Plus, CheckCircle2, Layers } from 'lucide-react';
+import { BookOpen, FileText, Eye, RefreshCw, ExternalLink, Plus, CheckCircle2 } from 'lucide-react';
 import { Card, SectionTitle, Check, DeleteBtn, Empty } from './ui';
-import { ConnectButton } from './WellnessCards';
 import { getJSON, postJSON, patchJSON, del, pop } from '@/lib/client';
 
 type StudyItem = { id: number; subject: string; title: string; task_type: string; completed: boolean };
@@ -194,23 +193,6 @@ export default function StudyView() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16, alignItems: 'start' }}>
         <NotionTracker />
         <ManualChecklist />
-        <Card>
-          <SectionTitle sub="Flashcards (when you're ready)"><Layers size={17} style={{ display: 'inline', verticalAlign: -3, marginRight: 6, color: 'var(--gold)' }} />Anki</SectionTitle>
-          <p style={{ fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.5, marginBottom: 14 }}>
-            Not connected. If you decide you want your Anki decks in here later, hit the button and we&apos;ll look at the options together.
-          </p>
-          <ConnectButton
-            label="Connect Anki"
-            color="var(--gold)"
-            icon={<Layers size={16} />}
-            title="Connecting Anki"
-            body={<>
-              Worth knowing up front: Anki is harder to plug in than Notion or Calendar. AnkiWeb has no public API, and the usual bridge (AnkiConnect) only works on a <strong>desktop with Anki open</strong> — not from a phone.
-              <br /><br />
-              So a live two-way sync isn&apos;t really on the cards, but there are workarounds — pulling in your due-card counts, or a desktop export. When you want to explore it, tell Claude <strong>&ldquo;let&apos;s look at Anki&rdquo;</strong> and we&apos;ll find the best option.
-            </>}
-          />
-        </Card>
       </div>
     </div>
   );

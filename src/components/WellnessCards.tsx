@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Footprints, Smartphone, Calendar, X, Activity } from 'lucide-react';
 import { Card, SectionTitle } from './ui';
-import { getJSON, postJSON, todayISO } from '@/lib/client';
+import { getJSON, postJSON, todayISO, pop } from '@/lib/client';
 
 type Metric = { log_date: string; steps: number | null; screen_minutes: number | null };
 
@@ -94,6 +94,50 @@ export function StepsScreenCard() {
           The realistic way to pull steps in automatically is to connect a fitness service that <em>does</em> have a web link — like <strong>Fitbit, Garmin, Oura or Strava</strong>. If you use one of those, tell Claude <strong>&ldquo;connect my [tracker]&rdquo;</strong> and we&apos;ll wire it up. Until then, the manual log above keeps everything tracked.
         </>}
       />
+    </Card>
+  );
+}
+
+// Daily mood — a gentle 1–5 check-in with a little trend.
+export function MoodCard() {
+  const today = todayISO();
+  const [recent, setRecent] = useState<{ log_date: string; rating: number; note: string }[]>([]);
+  const [note, setNote] = useState('');
+  const load = () => getJSON('/api/mood').then(setRecent);
+  useEffect(() => { load(); }, []);
+  const todayRow = recent.find(r => r.log_date.startsWith(today));
+  const FACES = [
+    { r: 1, e: '😞', c: 'var(--terra)' }, { r: 2, e: '😕', c: 'var(--gold)' },
+    { r: 3, e: '😐', c: 'var(--sky)' }, { r: 4, e: '🙂', c: 'var(--sage)' }, { r: 5, e: '😄', c: 'var(--plum)' },
+  ];
+  const setMood = async (rating: number) => { pop(); await postJSON('/api/mood', { log_date: today, rating, note: todayRow?.note || note }); load(); };
+  const saveNote = async () => { if (!todayRow) return; await postJSON('/api/mood', { log_date: today, rating: todayRow.rating, note }); load(); };
+
+  return (
+    <Card>
+      <SectionTitle sub="A quick daily check-in">How are you today?</SectionTitle>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 6, marginBottom: 12 }}>
+        {FACES.map(f => (
+          <button key={f.r} onClick={() => setMood(f.r)} style={{
+            flex: 1, fontSize: 26, padding: '8px 0', borderRadius: 10, cursor: 'pointer',
+            background: todayRow?.rating === f.r ? f.c + '22' : 'var(--paper2)',
+            border: todayRow?.rating === f.r ? `2px solid ${f.c}` : '2px solid transparent',
+          }}>{f.e}</button>
+        ))}
+      </div>
+      {todayRow && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+          <input placeholder="A word on why (optional)" defaultValue={todayRow.note} value={note || todayRow.note} onChange={e => setNote(e.target.value)} onBlur={saveNote} />
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 4, alignItems: 'center', justifyContent: 'center' }}>
+        {recent.slice(0, 14).reverse().map((r, i) => {
+          const f = FACES.find(x => x.r === r.rating);
+          return <span key={i} title={`${r.log_date.slice(5, 10)}: ${r.rating}/5`} style={{ width: 14, height: 14, borderRadius: '50%', background: f?.c || 'var(--line)', opacity: 0.85 }} />;
+        })}
+        {recent.length === 0 && <span style={{ fontSize: 12, color: 'var(--ink-soft)', fontStyle: 'italic' }}>Tap a face to start tracking.</span>}
+      </div>
+      {recent.length > 0 && <p style={{ fontSize: 11, color: 'var(--ink-soft)', textAlign: 'center', marginTop: 6 }}>last {Math.min(recent.length, 14)} days</p>}
     </Card>
   );
 }
