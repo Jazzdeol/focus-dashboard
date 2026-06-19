@@ -27,24 +27,39 @@ const STATUS_COLOUR: Record<string, string> = {
 };
 const statusColour = (s: string) => STATUS_COLOUR[s] || 'var(--ink-soft)';
 
+type NotionData = { configured: boolean; needsDatabase?: boolean; items: NotionItem[]; error?: string };
 function NotionTracker() {
-  const [data, setData] = useState<{ configured: boolean; items: NotionItem[]; error?: string }>({ configured: false, items: [] });
+  const [data, setData] = useState<NotionData>({ configured: false, items: [] });
   const [loading, setLoading] = useState(true);
+  const [dbs, setDbs] = useState<{ id: string; title: string }[] | null>(null);
+  const [picking, setPicking] = useState('');
   const load = () => { setLoading(true); getJSON('/api/notion-study').then(d => { setData(d); setLoading(false); }).catch(() => setLoading(false)); };
   useEffect(() => { load(); }, []);
+
+  // when a database is needed, fetch the list to choose from
+  useEffect(() => {
+    if (data.needsDatabase && dbs === null) getJSON('/api/notion-databases').then(r => setDbs(r.databases || []));
+  }, [data.needsDatabase, dbs]);
+
+  const chooseDb = async () => {
+    if (!picking) return;
+    await postJSON('/api/notion-databases', { database_id: picking });
+    setDbs(null); load();
+  };
 
   // group items: module → subtopic → items
   const byModule: Record<string, Record<string, NotionItem[]>> = {};
   for (const it of data.items) {
-    (byModule[it.module] ||= {});
-    (byModule[it.module][it.subtopic || 'General'] ||= []).push(it);
+    (byModule[it.module || 'My tracker'] ||= {});
+    (byModule[it.module || 'My tracker'][it.subtopic || 'General'] ||= []).push(it);
   }
   const modules = Object.keys(byModule).sort();
+  const hasModules = data.items.some(i => i.module);
 
   return (
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <SectionTitle sub="Live from your Notion Study Tracker">My study tracker</SectionTitle>
+        <SectionTitle sub="Live from your connected Notion">My study tracker</SectionTitle>
         <button onClick={load} aria-label="Refresh" style={{ background: 'none', border: 'none', color: 'var(--ink-soft)' }}>
           <RefreshCw size={16} className={loading ? 'spin' : ''} />
         </button>
@@ -55,14 +70,25 @@ function NotionTracker() {
       ) : !data.configured ? (
         <div style={{ background: 'var(--sky-soft)', borderRadius: 11, padding: 16, fontSize: 13, lineHeight: 1.6 }}>
           <strong>Notion isn&apos;t connected yet.</strong><br />
-          Once you add the two settings in Vercel (token + database ID), your Study Tracker shows up here automatically. The checklist below works in the meantime.
+          Head to the <strong>Settings ⚙️</strong> page (top-right) and hit <strong>Connect Notion</strong>. Your tracker will then show up here. The checklist below works in the meantime.
+        </div>
+      ) : data.needsDatabase ? (
+        <div style={{ background: 'var(--gold-soft)', borderRadius: 11, padding: 16, fontSize: 13, lineHeight: 1.6 }}>
+          <strong>Notion&apos;s connected! 🎉</strong> Now pick which database is your study tracker:
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <select value={picking} onChange={e => setPicking(e.target.value)} style={{ flex: 1 }}>
+              <option value="">{dbs === null ? 'Loading your databases…' : dbs.length ? 'Choose a database…' : 'No databases found — share one with the connection'}</option>
+              {(dbs || []).map(d => <option key={d.id} value={d.id}>{d.title}</option>)}
+            </select>
+            <button onClick={chooseDb} disabled={!picking} style={{ background: 'var(--plum)', color: '#fff', border: 'none', borderRadius: 8, padding: '0 14px', fontSize: 13, fontWeight: 600, opacity: picking ? 1 : 0.5 }}>Use this</button>
+          </div>
         </div>
       ) : data.error ? (
         <div style={{ background: 'var(--rose-soft)', borderRadius: 11, padding: 16, fontSize: 13, lineHeight: 1.6 }}>
-          Couldn&apos;t load Notion ({data.error}). Usually this means the database hasn&apos;t been shared with your integration yet, or the database ID is off. Double-check those two and hit refresh.
+          Couldn&apos;t load Notion ({data.error}). Try the refresh button, or reconnect from Settings.
         </div>
       ) : data.items.length === 0 ? (
-        <Empty>Connected! Add a row in your Notion Study Tracker and it&apos;ll appear here.</Empty>
+        <Empty>Connected! Add a row in your Notion database and it&apos;ll appear here.</Empty>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {modules.map(mod => {
@@ -72,11 +98,13 @@ function NotionTracker() {
             const done = allItems.filter(i => i.done).length;
             return (
               <div key={mod}>
-                {/* module header in its colour */}
+                {/* module header in its colour (only when the DB has a Module field) */}
+                {hasModules && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                   <span style={{ background: colour, color: '#fff', fontWeight: 700, fontSize: 15, borderRadius: 8, padding: '4px 12px', fontFamily: 'var(--serif)' }}>{mod}</span>
                   <span style={{ fontSize: 12, color: 'var(--ink-soft)' }}>{done}/{allItems.length} done</span>
                 </div>
+                )}
                 {Object.keys(subtopics).sort().map(sub => (
                   <div key={sub} style={{ marginBottom: 12, paddingLeft: 6, borderLeft: `2px solid ${colour}33`, marginLeft: 4 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6, paddingLeft: 8 }}>{sub}</div>

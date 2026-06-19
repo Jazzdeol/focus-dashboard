@@ -1,35 +1,50 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
+import { getDb } from '@/lib/db';
 import { getUserId, unauthorized } from '@/lib/auth';
+import { getValidAccessToken } from '@/lib/integrations';
 
-// Notion is configured with a single set of global keys (the owner's account).
-// To avoid exposing the owner's Notion to every user, it only returns data to
-// the configured owner (CLERK_OWNER_ID). Per-user Notion can be added later.
+function readMeta(m: unknown): Record<string, unknown> {
+  if (!m) return {};
+  if (typeof m === 'string') { try { return JSON.parse(m); } catch { return {}; } }
+  return m as Record<string, unknown>;
+}
+
 export async function GET() {
   const userId = await getUserId(); if (!userId) return unauthorized();
-  const token = process.env.NOTION_TOKEN;
-  const dbId = process.env.NOTION_DATABASE_ID;
-  const owner = process.env.CLERK_OWNER_ID;
-  if (!token || !dbId || !owner || userId !== owner) {
-    return NextResponse.json({ configured: false, items: [] });
-  }
+  const token = await getValidAccessToken(userId, 'notion');
+  if (!token) return NextResponse.json({ configured: false, items: [] });
+
+  const sql = getDb();
+  const rows = await sql`SELECT metadata FROM integration_accounts WHERE user_id=${userId} AND provider='notion'`;
+  const meta = readMeta(rows[0]?.metadata);
+  const dbId = meta.database_id as string | undefined;
+  if (!dbId) return NextResponse.json({ configured: true, needsDatabase: true, items: [] });
+
   try {
     const res = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Notion-Version': '2022-06-28', 'Content-Type': 'application/json' },
       body: JSON.stringify({ page_size: 200 }),
     });
-    if (!res.ok) { const detail = await res.text(); return NextResponse.json({ configured: true, error: `Notion said: ${res.status}`, detail, items: [] }); }
+    if (!res.ok) {
+      if (res.status === 404) return NextResponse.json({ configured: true, needsDatabase: true, items: [], error: 'lost_access' });
+      return NextResponse.json({ configured: true, error: `Notion said ${res.status}`, items: [] });
+    }
     const data = await res.json();
-    type Prop = { title?: { plain_text: string }[]; rich_text?: { plain_text: string }[]; select?: { name: string } | null };
-    type NotionPage = { id: string; url: string; properties: Record<string, Prop> };
-    const items = (data.results as NotionPage[]).map((p) => {
+    type Prop = { type: string; title?: { plain_text: string }[]; rich_text?: { plain_text: string }[]; select?: { name: string } | null; status?: { name: string } | null };
+    type Page = { id: string; url: string; properties: Record<string, Prop> };
+
+    const items = (data.results as Page[]).map((p) => {
       const props = p.properties || {};
-      const titleProp = Object.values(props).find((v) => Array.isArray(v.title));
+      const titleProp = Object.values(props).find((v) => v.type === 'title');
       const title = titleProp?.title?.map((t) => t.plain_text).join('') || 'Untitled';
-      const moduleName = props['Module']?.select?.name || 'Other';
-      const subtopic = props['Subtopic']?.rich_text?.map((t) => t.plain_text).join('') || '';
-      const status = props['Status']?.select?.name || '';
+      // pick named props if present, else best-guess
+      const moduleName = props['Module']?.select?.name || '';
+      const subtopic = props['Subtopic']?.rich_text?.map((t) => t.plain_text).join('')
+        || props['Subtopic']?.select?.name || '';
+      const statusProp = props['Status'] || Object.values(props).find((v) => v.type === 'status' || v.type === 'select');
+      const status = statusProp?.select?.name || statusProp?.status?.name || '';
       return { id: p.id, title, module: moduleName, subtopic, status, done: status === 'Done', url: p.url };
     });
     return NextResponse.json({ configured: true, items });
